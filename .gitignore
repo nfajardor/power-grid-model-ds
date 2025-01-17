@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: Contributors to the Power Grid Model project <powergridmodel@lfenergy.org>
+#
+# SPDX-License-Identifier: MPL-2.0
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+.pytest_cache/
+
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+
+# Visual Studio Code
+launch.json
+settings.json
+
+# HTMLs from visualizers
+*.html
+*.js
+*.css
+
+# MacOS
+.DS_Store
+
+# overage
+htmlcov
+.coverage
+
+# caching
+*.pickle
+*.gz
+*.zip
+
+# local builds
+dist/
+
+# direnv config
+.envrc
+
+# docs
+docs/build/
+docs/make.bat
+docs/Makefile
+
+# Generated files
+*.egg-info
+PYPI_VERSION
+build/
+wheelhouse/

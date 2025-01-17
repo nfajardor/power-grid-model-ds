@@ -1,0 +1,8 @@
+S1 2
+S1 3 open
+2 7
+3 5
+3 6 transformer
+5 7
+7 8
+8 9
