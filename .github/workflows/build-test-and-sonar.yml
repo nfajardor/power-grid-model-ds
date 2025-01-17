@@ -152,20 +152,20 @@ jobs:
           name: power-grid-model-ds
           path: wheelhouse/
 
-      # - name: Upload wheels
-      #   if: (github.event_name == 'push') || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.create_release == 'true'))
-      #   run: |
-      #     pip install twine
-      #     echo "Publish to PyPI..."
-      #     twine upload --verbose wheelhouse/*
+      - name: Upload wheels
+        if: (github.event_name == 'push') || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.create_release == 'true'))
+        run: |
+          pip install twine
+          echo "Publish to PyPI..."
+          twine upload --verbose wheelhouse/*
 
-      # - name: Release
-      #   if: (github.event_name == 'push') || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.create_release == 'true'))
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: |
-      #       ./wheelhouse/*
-      #     tag_name: v${{ needs.build-python.outputs.version }}
-      #     prerelease: ${{github.ref != 'refs/heads/main'}}
-      #     generate_release_notes: true
-      #     target_commitish: ${{ github.sha }}
+      - name: Release
+        if: (github.event_name == 'push') || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.create_release == 'true'))
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./wheelhouse/*
+          tag_name: v${{ needs.build-python.outputs.version }}
+          prerelease: ${{github.ref != 'refs/heads/main'}}
+          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
