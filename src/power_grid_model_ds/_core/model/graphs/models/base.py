@@ -275,7 +275,48 @@ class BaseGraphModel(ABC):
             nodes_to_ignore=self._externals_to_internals(nodes_to_ignore),
             inclusive=inclusive,
         )
+
         return self._internals_to_externals(nodes)
+
+    def find_first_connected(self, node_id: int, candidate_node_ids: list[int]) -> int:
+        """Find the first connected node to the node_id from the candidate_node_ids
+
+        Note:
+            If multiple candidate nodes are connected to the node, the first one found is returned.
+            There is no guarantee that the same candidate node will be returned each time.
+
+        Raises:
+            MissingNodeError: if no connected node is found
+            ValueError: if the node_id is in candidate_node_ids
+        """
+        internal_node_id = self.external_to_internal(node_id)
+        internal_candidates = self._externals_to_internals(candidate_node_ids)
+        if internal_node_id in internal_candidates:
+            raise ValueError("node_id cannot be in candidate_node_ids")
+        return self.internal_to_external(self._find_first_connected(internal_node_id, internal_candidates))
+
+    def get_downstream_nodes(self, node_id: int, start_node_ids: list[int], inclusive: bool = False) -> list[int]:
+        """Find all nodes downstream of the node_id with respect to the start_node_ids
+
+        Example:
+            given this graph: [1] - [2] - [3] - [4]
+            >>> graph.get_downstream_nodes(2, [1]) == [3, 4]
+            >>> graph.get_downstream_nodes(2, [1], inclusive=True) == [2, 3, 4]
+
+        args:
+            node_id: node id to start the search from
+            start_node_ids: list of node ids considered 'above' the node_id
+            inclusive: whether to include the given node id in the result
+        returns:
+            list of node ids sorted by distance, downstream of to the node id
+        """
+        connected_node = self.find_first_connected(node_id, start_node_ids)
+        path, _ = self.get_shortest_path(node_id, connected_node)
+        _, upstream_node, *_ = (
+            path  # path is at least 2 elements long or find_first_connected would have raised an error
+        )
+
+        return self.get_connected(node_id, [upstream_node], inclusive)
 
     def find_fundamental_cycles(self) -> list[list[int]]:
         """Find all fundamental cycles in the graph.
@@ -315,6 +356,9 @@ class BaseGraphModel(ABC):
 
     @abstractmethod
     def _get_connected(self, node_id: int, nodes_to_ignore: list[int], inclusive: bool = False) -> list[int]: ...
+
+    @abstractmethod
+    def _find_first_connected(self, node_id: int, candidate_node_ids: list[int]) -> int: ...
 
     @abstractmethod
     def _has_branch(self, from_node_id, to_node_id) -> bool: ...

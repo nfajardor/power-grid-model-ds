@@ -7,7 +7,7 @@ from typing import Generator
 
 import rustworkx as rx
 from rustworkx import NoEdgeBetweenNodes
-from rustworkx.visit import BFSVisitor, PruneSearch
+from rustworkx.visit import BFSVisitor, PruneSearch, StopSearch
 
 from power_grid_model_ds._core.model.graphs.errors import MissingBranchError, MissingNodeError, NoPathBetweenNodes
 from power_grid_model_ds._core.model.graphs.models._rustworkx_search import find_fundamental_cycles_rustworkx
@@ -103,6 +103,13 @@ class RustworkxGraphModel(BaseGraphModel):
     def _in_branches(self, int_node_id: int) -> Generator[tuple[int, int], None, None]:
         return ((source, target) for source, target, _ in self._graph.in_edges(int_node_id))
 
+    def _find_first_connected(self, node_id: int, candidate_node_ids: list[int]) -> int:
+        visitor = _NodeFinder(candidate_nodes=candidate_node_ids)
+        rx.bfs_search(self._graph, [node_id], visitor)
+        if visitor.found_node is None:
+            raise MissingNodeError(f"node {node_id} is not connected to any of the candidate nodes")
+        return visitor.found_node
+
     def _find_fundamental_cycles(self) -> list[list[int]]:
         """Find all fundamental cycles in the graph using Rustworkx.
 
@@ -124,3 +131,16 @@ class _NodeVisitor(BFSVisitor):
         if v in self.nodes_to_ignore:
             raise PruneSearch
         self.nodes.append(v)
+
+
+class _NodeFinder(BFSVisitor):
+    """Visitor that stops the search when a candidate node is found"""
+
+    def __init__(self, candidate_nodes: list[int]):
+        self.candidate_nodes = candidate_nodes
+        self.found_node: int | None = None
+
+    def discover_vertex(self, v):
+        if v in self.candidate_nodes:
+            self.found_node = v
+            raise StopSearch
