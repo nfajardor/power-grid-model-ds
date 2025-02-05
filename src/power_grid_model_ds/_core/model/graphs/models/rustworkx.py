@@ -100,6 +100,9 @@ class RustworkxGraphModel(BaseGraphModel):
 
         return connected_nodes
 
+    def _in_branches(self, int_node_id: int) -> Generator[tuple[int, int], None, None]:
+        return ((source, target) for source, target, _ in self._graph.in_edges(int_node_id))
+
     def _find_fundamental_cycles(self) -> list[list[int]]:
         """Find all fundamental cycles in the graph using Rustworkx.
 
