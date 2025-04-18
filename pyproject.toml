@@ -26,7 +26,11 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 requires-python = ">=3.11,<3.14"
-dependencies = ["power-grid-model>=1.7", "rustworkx>= 0.15.1", "numpy>=1.21"]
+dependencies = [
+    "power-grid-model>=1.7",
+    "rustworkx>= 0.15.1",
+    "numpy>=1.21",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
@@ -40,8 +44,19 @@ dev = [
   "isort>=5.13.2",
   "mypy>=1.9.0",
   "pre-commit>=4",
-
+  # Visualization (make sure these stay equalivalent to the 'visualizer' group)
+  "dash>=3.0.0",
+  "dash-bootstrap-components>=2.0.0",
+  "dash-cytoscape>=1.0.2",
 ]
+
+visualizer = [
+  # Visualization (make sure these are also updated in the 'dev' group)
+  "dash>=3.0.0",
+  "dash-bootstrap-components>=2.0.0",
+  "dash-cytoscape>=1.0.2",
+]
+
 doc = [
   "sphinx",
   "myst-nb",
@@ -50,6 +65,7 @@ doc = [
   "sphinx-hoverxref",
   "numpydoc",
 ]
+
 
 [project.urls]
 Home-page = "https://lfenergy.org/projects/power-grid-model/"
@@ -108,3 +124,8 @@ disable_error_code = ["assignment", "import-untyped"]
 [tool.coverage.run]
 relative_files = true
 branch = true
+
+[tool.coverage.report]
+exclude_also = [
+  'if TYPE_CHECKING:',
+]
