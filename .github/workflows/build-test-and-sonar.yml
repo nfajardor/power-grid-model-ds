@@ -152,6 +152,28 @@ jobs:
           name: power-grid-model-ds
           path: wheelhouse/
 
+      - name: Checkout source code
+        if: (github.event_name == 'push')
+        uses: actions/checkout@v4  # needed by 'Prevent automatic major/minor release'
+
+      - name: Prevent automatic major/minor release
+        if: (github.event_name == 'push')
+        run: |
+          echo "Fetching the latest release..."
+          tag=$(gh release view --json tagName --jq '.tagName')
+          tag=${tag#v}  # Remove the leading 'v'
+          major_minor=$(echo "$tag" | cut -d. -f1,2)
+          version_file=$(cat VERSION)
+
+          if [ "$major_minor" = "$version_file" ]; then
+            echo "Patch release detected. Proceeding with automatic release."
+          else
+            echo "Cannot automatically release a new major/minor version. Please trigger manually if desired."
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload wheels
         if: (github.event_name == 'push') || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.create_release == 'true'))
         run: |
