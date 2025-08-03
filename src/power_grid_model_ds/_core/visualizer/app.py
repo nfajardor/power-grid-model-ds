@@ -19,9 +19,16 @@ from power_grid_model_ds._core.visualizer.layout.selection_output import SELECTI
 from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array
 from power_grid_model_ds.arrays import NodeArray
 
+
+
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
 MDBOOTSTRAP = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
 
+
+import pandas as pd
+from dash import dash_table, dcc, callback, Input, Output, State, callback
+import plotly.express as px
+import dash_cytoscape as cyto
 
 def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     """Visualize the Grid.
@@ -49,7 +56,9 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
         external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, MDBOOTSTRAP, FONT_AWESOME, GOOGLE_FONTS]
     )
     app.layout = get_app_layout(grid)
-    app.run(debug=debug, port=port)
+
+    #app.run(debug=True,port=port)
+
 
 
 def _get_columns_store(grid: Grid) -> dcc.Store:
@@ -70,6 +79,12 @@ def get_app_layout(grid: Grid) -> html.Div:
     columns_store = _get_columns_store(grid)
     graph_layout = _get_graph_layout(grid.node)
     elements = parse_node_array(grid.node) + parse_branches(grid)
+    # print("THE ELEMENTS")
+
+    # for element in elements:
+    #     print("ASASDASDS")
+    #     print(element)
+
     cytoscape_html = get_cytoscape_html(graph_layout, elements)
 
     return html.Div(

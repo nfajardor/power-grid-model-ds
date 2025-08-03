@@ -14,8 +14,9 @@ def parse_node_array(nodes: NodeArray) -> list[dict[str, Any]]:
     parsed_nodes = []
 
     with_coords = "x" in nodes.columns and "y" in nodes.columns
-
+    # print('parsing the nodes')
     columns = nodes.columns
+    i = 0
     for node in nodes:
         cyto_elements = {"data": _array_to_dict(node, columns)}
         cyto_elements["data"]["id"] = str(node.id.item())
@@ -23,6 +24,8 @@ def parse_node_array(nodes: NodeArray) -> list[dict[str, Any]]:
         if with_coords:
             cyto_elements["position"] = {"x": node.x.item(), "y": -node.y.item()}  # invert y-axis for visualization
         parsed_nodes.append(cyto_elements)
+        # print(f'{i}\n{cyto_elements}')
+        # i += 1
     return parsed_nodes
 
 
@@ -30,8 +33,14 @@ def parse_branches(grid: Grid) -> list[dict[str, Any]]:
     """Parse the branches."""
     parsed_branches = []
     parsed_branches.extend(parse_branch_array(grid.line, "line"))
+    # print("lines")
+    # print(grid.line)
     parsed_branches.extend(parse_branch_array(grid.link, "link"))
+    # print("links")
+    # print(grid.link)
     parsed_branches.extend(parse_branch_array(grid.transformer, "transformer"))
+    # print("transformers")
+    # print(grid.transformer)
     return parsed_branches
 
 

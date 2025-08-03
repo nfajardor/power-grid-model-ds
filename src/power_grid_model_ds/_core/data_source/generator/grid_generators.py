@@ -27,7 +27,7 @@ class RadialGridGenerator(Generic[T]):
     def __init__(
         self,
         grid_class: Type[T],
-        nr_nodes: int = 100,
+        nr_nodes: int = 10,
         nr_sources: int = 2,
         nr_nops: int = 10,
         graph_model: type[BaseGraphModel] = RustworkxGraphModel,
@@ -43,6 +43,8 @@ class RadialGridGenerator(Generic[T]):
 
         if a seed is provided, this will be used to set rng.
         """
+
+        # print("RUNNING THE THING")
         grid = self.grid_class.empty(graph_model=self.graph_model)
 
         # create nodeArray
@@ -50,8 +52,19 @@ class RadialGridGenerator(Generic[T]):
 
         nodes, _loads_low, loads_high = node_generator.run(amount=self.nr_nodes)
         grid.append(nodes)
+        # print("Nodes")
+        # i = 0
+        # for n in nodes:
+        #     print(f'{i}\n{n}')
+        #     i += 1
+        # print("End Nodes")
         grid.append(loads_high)
-
+        # print("Loads")
+        # i = 0
+        # for n in loads_high:
+        #     print(f'{i}\n{n}')
+        #     i += 1
+        # print("End Loads")
         # create sourceArray
         source_generator = SourceGenerator(grid=grid, seed=seed)
         nodes, sources = source_generator.run(amount=self.nr_sources)
