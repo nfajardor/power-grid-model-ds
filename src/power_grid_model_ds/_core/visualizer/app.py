@@ -57,7 +57,7 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     )
     app.layout = get_app_layout(grid)
 
-    #app.run(debug=True,port=port)
+    app.run(debug=True,port=port)
 
 
 
