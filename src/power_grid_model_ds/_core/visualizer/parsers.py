@@ -35,9 +35,21 @@ def parse_nodes_geojson(nodes:NodeArray) -> list[dict[str, Any]]:
     print(f'Node columns:\n{nodes.columns}')
     for node in nodes:
         data = _array_to_dict(node, nodes.columns)
-        element = {"type": "Feature", "properties": {"Name": str(node.id.item()), "node_type": data["node_type"]
-                                                     #"u_rated": data["u_rated"], "node_type": data["node_type"], "feeder_branch_id": data["feeder_branch_id"], "feeder_node_id": data["feeder_node_id"], "group": data["group"]
-                                                     }, "geometry": {"type": "Point"}}
+        element = {
+            "type": "Feature",
+            "properties": {
+                "Name": str(node.id.item()),
+                "data": {
+                    "u_rated": data["u_rated"],
+                    "node_type": data["node_type"],
+                    "feeder_branch_id": data["feeder_branch_id"],
+                    "feeder_node_id": data["feeder_node_id"]
+                }
+            },
+            "geometry": {
+                "type": "Point"
+            }
+        }
         parsed_nodes.append(element)
     return parsed_nodes
 def parse_branches(grid: Grid) -> list[dict[str, Any]]:
