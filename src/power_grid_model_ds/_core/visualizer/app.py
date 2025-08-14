@@ -20,6 +20,10 @@ from power_grid_model_ds._core.visualizer.layout.selection_output import SELECTI
 from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array
 from power_grid_model_ds.arrays import NodeArray
 
+
+import dash_bootstrap_components as dbc
+
+
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
 MDBOOTSTRAP = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
 
@@ -51,6 +55,35 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     )
     app.layout = get_app_layout(grid)
     app.run(debug=debug, port=port)
+
+
+def slider_visualization(grid: Grid, debug: bool = True, port: int = 8050) -> None:
+    """Visualize the Grid using the three mdoes: map, fdg and sld.
+
+        grid: Grid
+            The grid to visualize.
+
+        debug: bool
+            Whether to initialize the dash app in debug mode.
+
+        port: int
+            Port to access the app
+        """
+    app = Dash(
+        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, MDBOOTSTRAP, FONT_AWESOME, GOOGLE_FONTS]
+    )
+    app.layout = get_slider_app_layout(grid)
+    app.run(debug=debug, port=port)
+
+
+def get_slider_app_layout(gid: Grid) -> dbc.Container:
+
+    return dbc.Container([
+        html.Div(["hola mundo"])
+    ])
+
+
+
 
 
 def _get_columns_store(grid: Grid) -> dcc.Store:
