@@ -12,16 +12,15 @@ from power_grid_model_ds._core.visualizer.callbacks import (  # noqa: F401  # py
     element_selection,
     header,
     search_form,
+    slider_output
 )
 from power_grid_model_ds._core.visualizer.layout.cytoscape_html import get_cytoscape_html
 from power_grid_model_ds._core.visualizer.layout.cytoscape_styling import DEFAULT_STYLESHEET
 from power_grid_model_ds._core.visualizer.layout.header import HEADER_HTML
 from power_grid_model_ds._core.visualizer.layout.selection_output import SELECTION_OUTPUT_HTML
-from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array
+from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array, parse_grid_to_geojson
 from power_grid_model_ds.arrays import NodeArray
 
-
-import dash_bootstrap_components as dbc
 
 
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
@@ -57,7 +56,7 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     app.run(debug=debug, port=port)
 
 
-def slider_visualization(grid: Grid, debug: bool = True, port: int = 8050) -> None:
+def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: int = 8050, name: str = "Grid Data") -> None:
     """Visualize the Grid using the three mdoes: map, fdg and sld.
 
         grid: Grid
@@ -72,19 +71,23 @@ def slider_visualization(grid: Grid, debug: bool = True, port: int = 8050) -> No
     app = Dash(
         external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, MDBOOTSTRAP, FONT_AWESOME, GOOGLE_FONTS]
     )
-    app.layout = get_slider_app_layout(grid)
+
+    app.layout = get_slider_app_layout(grid, name, file_name)
     app.run(debug=debug, port=port)
 
 
-def get_slider_app_layout(gid: Grid) -> dbc.Container:
+def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Container:
     menu = get_menu_layout()
+    map_container = get_map_layout(grid, name, file_name)
     return dbc.Container([
-        menu
+        menu,
+        map_container
     ])
 
 
-def get_map_layout(grid: Grid) -> dbc.Row:
-    
+def get_map_layout(grid: Grid, name: str, file_name: str) -> dbc.Row:
+    geojson = parse_grid_to_geojson(grid, name, file_name)
+
     return dbc.Row([
 
     ])

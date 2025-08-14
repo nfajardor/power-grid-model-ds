@@ -7,7 +7,9 @@ from typing import Any, Literal
 from power_grid_model_ds._core.model.arrays.base.array import FancyArray
 from power_grid_model_ds._core.model.grids.base import Grid
 from power_grid_model_ds.arrays import Branch3Array, BranchArray, NodeArray
-
+import os
+import json
+import random
 
 def parse_node_array(nodes: NodeArray) -> list[dict[str, Any]]:
     """Parse the nodes."""
@@ -77,3 +79,171 @@ def parse_branch_array(branches: BranchArray, group: Literal["line", "link", "tr
 def _array_to_dict(array_record: FancyArray, columns: list[str]) -> dict[str, Any]:
     """Stringify the record (required by Dash)."""
     return dict(zip(columns, array_record.tolist().pop()))
+
+
+def parse_nodes_geojson(nodes: NodeArray) \
+        -> tuple[list[dict[str, Any]], dict[str, list[float]]]:
+    """Parses the nodes in the grid into a list of feature element for the geojson and a dictionary
+
+        Parameters
+        ----------
+        nodes: NodeArray
+            The nodes in the grid
+
+        Returns
+        ---------
+        parsed_nodes: list[dict[str, Any]]
+            The parsed nodes in the grid
+
+        node_dict: dict[str, list[float]]
+            Dictionary with the nodes in the grid
+    """
+
+    parsed_nodes = []
+    node_dict = {}
+
+    # Mean and std of latitude and longitude to set the current coordinates as random
+    center = [4.36716, 52.00738]
+    extreme = [4.39349, 51.98508]
+    std_lon = (extreme[0] - center[0]) / 3
+    std_lat = (extreme[1] - center[1]) / 3
+
+    for node in nodes:
+        data = _array_to_dict(node, nodes.columns)
+        node_name = str(node.id.item())
+        node_dict[node_name] = \
+            [
+                round(random.normalvariate(mu=center[0], sigma=std_lon), 5),
+                round(random.normalvariate(mu=center[1], sigma=std_lat), 5)
+            ]
+        element = {
+            "type": "Feature",
+            "properties": {
+                "Name": node_name,
+                "data": data
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": node_dict[node_name]
+            }
+        }
+        parsed_nodes.append(element)
+    return parsed_nodes, node_dict
+
+
+def parse_branch_array_geojson(
+        branches: BranchArray,
+        group: Literal["line", "link", "transformer"],
+        node_dict: dict[str, list[float]]) \
+        -> list[dict[str, Any]]:
+    """Parses a branch array of a single type as a list of geojson features
+
+    Parameters
+    ----------
+    branches: BranchArray
+    The branch array of specific type
+
+    group: Literal["line", "link", "transformer"]
+    The type of the branch array. Can be 'line', 'link', or 'transformer'
+
+    node_dict: dict[str, list[float]]
+    Dictionary with the nodes in the grid
+
+    Returns
+    -----------
+    list[dict[str, Any]]
+    parsed branches
+
+    """
+    parsed_branches = []
+    columns = branches.columns
+    for branch in branches:
+        data = _array_to_dict(branch, columns)
+        data["group"] = group
+        element = {
+            "type": "Feature",
+            "properties": {
+                "Name": str(branch.id.item()),
+                "data": data
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [node_dict[str(branch.from_node.item())], [node_dict[str(branch.to_node.item())]]]
+            }
+        }
+        parsed_branches.append(element)
+    return parsed_branches
+
+
+def parse_branches_geojson(
+        grid: Grid,
+        node_dict: dict[str, list[float]]) \
+        -> list[dict[str, Any]]:
+    """Parse the branches into a list of feature element for the geojson
+
+    Parameters
+    ----------
+    grid: Grid
+    The grid
+
+    node_dict: dict[str, list[float]]
+    Dictionary with the nodes in the grid
+
+    Returns
+    ----------
+    parsed_branches: list[dict[str, Any]]
+    The parsed branches in the grid as geojson features
+
+    """
+    parsed_branches = []
+    parsed_branches.extend(parse_branch_array_geojson(grid.line, "line", node_dict))
+    parsed_branches.extend(parse_branch_array_geojson(grid.link, "link", node_dict))
+    parsed_branches.extend(parse_branch_array_geojson(grid.transformer, "transformer", node_dict))
+    return parsed_branches
+
+
+def parse_grid_to_geojson(
+        grid: Grid,
+        name: str,
+        file_name: str) \
+        -> dict[str, any]:
+    """Parses the grid into GeoJSON format and stores it in a file
+
+    Parameters
+    ------------
+    grid: Grid
+        The grid to be parsed
+
+    name: str
+        Name of the Feature Collection
+
+    file_name: str
+        Name of the file to store the GeoJSON
+
+    Returns
+    -------------
+    dict[str, Any]
+        Dictionary with the grid parsed as geojson
+
+    """
+
+    if os.path.exists(file_name):
+        with open(file_name, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    features = []
+    parsed_nodes, node_dict = parse_nodes_geojson(grid.node)
+    parsed_branches = parse_branches_geojson(grid, node_dict)
+
+    features.extend(parsed_nodes)
+    features.extend(parsed_branches)
+    geojson = {
+
+        "type": "FeatureCollection",
+        "name": f"{name}",
+        "features": features
+    }
+    with open(file_name, "w", encoding="utf-8") as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=4)
+    return geojson
+
