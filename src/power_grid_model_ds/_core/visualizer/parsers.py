@@ -107,7 +107,7 @@ def parse_nodes_geojson(nodes: NodeArray) \
     extreme = [4.39349, 51.98508]
     std_lon = (extreme[0] - center[0]) / 3
     std_lat = (extreme[1] - center[1]) / 3
-
+    print(f"Node columns: {nodes.columns}")
     for node in nodes:
         data = _array_to_dict(node, nodes.columns)
         node_name = str(node.id.item())
@@ -120,7 +120,12 @@ def parse_nodes_geojson(nodes: NodeArray) \
             "type": "Feature",
             "properties": {
                 "Name": node_name,
-                "data": data
+                "data": data,
+                "coords": {
+                    "geo": node_dict[node_name],
+                    "fdg": center,
+                    "sdl": extreme
+                }
             },
             "geometry": {
                 "type": "Point",
@@ -157,6 +162,7 @@ def parse_branch_array_geojson(
     """
     parsed_branches = []
     columns = branches.columns
+    print(f"{group} columns: {columns}")
     for branch in branches:
         data = _array_to_dict(branch, columns)
         data["group"] = group
@@ -247,3 +253,23 @@ def parse_grid_to_geojson(
         json.dump(geojson, f, ensure_ascii=False, indent=4)
     return geojson
 
+
+def divide_geojson(geojson: dict[str, any]) -> tuple[dict[str, any], dict[str, any]]:
+    nodes = [f for f in geojson["features"] if f["geometry"]["type"] == "Point"]
+    branches = [f for f in geojson["features"] if f["geometry"]["type"] == "LineString"]
+    nodes_geojson = {
+        "type": "FeatureCollection",
+        "name": "NODES",
+        "features": nodes
+    }
+    branches_geojson = {
+        "type": "FeatureCollection",
+        "name": "BRANCHES",
+        "features": branches
+    }
+    return nodes_geojson, branches_geojson
+def parse_geojson_to_dict(geojson: dict[str, any]) -> dict[str, any]:
+    dictionary = {}
+    for f in geojson["features"]:
+        dictionary[f["properties"]["Name"]] = f
+    return dictionary

@@ -21,10 +21,10 @@ from power_grid_model_ds._core.visualizer.layout.selection_output import SELECTI
 from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array, parse_grid_to_geojson
 from power_grid_model_ds.arrays import NodeArray
 
-
+from power_grid_model_ds._core.visualizer.map_container import create_map_container
 
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
-MDBOOTSTRAP = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
+BOOTSTRAP_STUFF = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
 
 
 def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
@@ -50,7 +50,7 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     """
 
     app = Dash(
-        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, MDBOOTSTRAP, FONT_AWESOME, GOOGLE_FONTS]
+        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, BOOTSTRAP_STUFF, FONT_AWESOME, GOOGLE_FONTS]
     )
     app.layout = get_app_layout(grid)
     app.run(debug=debug, port=port)
@@ -69,7 +69,7 @@ def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: i
             Port to access the app
         """
     app = Dash(
-        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, MDBOOTSTRAP, FONT_AWESOME, GOOGLE_FONTS]
+        external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, BOOTSTRAP_STUFF, FONT_AWESOME, GOOGLE_FONTS]
     )
 
     app.layout = get_slider_app_layout(grid, name, file_name)
@@ -79,6 +79,8 @@ def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: i
 def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Container:
     menu = get_menu_layout()
     map_container = get_map_layout(grid, name, file_name)
+    print("_______")
+    print(map_container)
     return dbc.Container([
         menu,
         map_container
@@ -87,10 +89,8 @@ def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Containe
 
 def get_map_layout(grid: Grid, name: str, file_name: str) -> dbc.Row:
     geojson = parse_grid_to_geojson(grid, name, file_name)
-
-    return dbc.Row([
-
-    ])
+    map_container = create_map_container(geojson)
+    return map_container
 
 
 def get_menu_layout() -> dbc.Row:
