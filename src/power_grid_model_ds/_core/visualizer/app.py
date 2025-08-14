@@ -77,13 +77,37 @@ def slider_visualization(grid: Grid, debug: bool = True, port: int = 8050) -> No
 
 
 def get_slider_app_layout(gid: Grid) -> dbc.Container:
-
+    menu = get_menu_layout()
     return dbc.Container([
-        html.Div(["hola mundo"])
+        menu
     ])
 
 
+def get_map_layout(grid: Grid) -> dbc.Row:
+    
+    return dbc.Row([
 
+    ])
+
+
+def get_menu_layout() -> dbc.Row:
+    slider = dcc.Slider(
+        id='main-slider',
+        min=0,
+        max=1,
+        step=0.02,
+        value=0,
+        marks={0: 'Map View', 0.5: "FDG View", 1: "SLD View"},
+        updatemode="drag"
+    )
+    text_output = html.Div(
+        id="slider-output-text",
+        children=["Hello World!"],
+    )
+    return dbc.Row([
+        dbc.Col([slider], width=6),
+        dbc.Col([text_output], width=6)
+    ])
 
 
 def _get_columns_store(grid: Grid) -> dcc.Store:
