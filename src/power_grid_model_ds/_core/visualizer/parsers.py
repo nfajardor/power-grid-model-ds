@@ -7,9 +7,12 @@ from typing import Any, Literal
 from power_grid_model_ds._core.model.arrays.base.array import FancyArray
 from power_grid_model_ds._core.model.grids.base import Grid
 from power_grid_model_ds.arrays import Branch3Array, BranchArray, NodeArray
+
 import os
 import json
 import random
+
+SLIDER_STEP = 0.05
 
 def parse_node_array(nodes: NodeArray) -> list[dict[str, Any]]:
     """Parse the nodes."""
@@ -107,29 +110,43 @@ def parse_nodes_geojson(nodes: NodeArray) \
     extreme = [4.39349, 51.98508]
     std_lon = (extreme[0] - center[0]) / 3
     std_lat = (extreme[1] - center[1]) / 3
-    print(f"Node columns: {nodes.columns}")
+
+
+
     for node in nodes:
         data = _array_to_dict(node, nodes.columns)
         node_name = str(node.id.item())
-        node_dict[node_name] = \
+        node_dict[node_name] = {}
+        node_dict[node_name]["geo"] = \
             [
                 round(random.normalvariate(mu=center[0], sigma=std_lon), 5),
                 round(random.normalvariate(mu=center[1], sigma=std_lat), 5)
             ]
+        node_dict[node_name]["fdg"] = \
+            [
+                round(random.normalvariate(mu=center[0], sigma=std_lon), 5),
+                round(random.normalvariate(mu=center[1], sigma=std_lat), 5)
+            ]
+        node_dict[node_name]["sld"] = \
+            [
+                round(random.normalvariate(mu=center[0], sigma=std_lon), 5),
+                round(random.normalvariate(mu=center[1], sigma=std_lat), 5)
+            ]
+
         element = {
             "type": "Feature",
             "properties": {
                 "Name": node_name,
                 "data": data,
                 "coords": {
-                    "geo": node_dict[node_name],
-                    "fdg": center,
-                    "sdl": extreme
+                    "geo": node_dict[node_name]["geo"],
+                    "fdg": node_dict[node_name]["fdg"],
+                    "sld": node_dict[node_name]["sld"]
                 }
             },
             "geometry": {
                 "type": "Point",
-                "coordinates": node_dict[node_name]
+                "coordinates": node_dict[node_name]["geo"]
             }
         }
         parsed_nodes.append(element)
@@ -162,10 +179,18 @@ def parse_branch_array_geojson(
     """
     parsed_branches = []
     columns = branches.columns
-    print(f"{group} columns: {columns}")
     for branch in branches:
         data = _array_to_dict(branch, columns)
         data["group"] = group
+        from_node = str(branch.from_node.item())
+        to_node = str(branch.to_node.item())
+        data["from_geo"] = node_dict[from_node]["geo"]
+        data["to_geo"] = node_dict[to_node]["geo"]
+        data["from_fdg"] = node_dict[from_node]["fdg"]
+        data["to_fdg"] = node_dict[to_node]["fdg"]
+        data["from_sld"] = node_dict[from_node]["sld"]
+        data["to_sld"] = node_dict[to_node]["sld"]
+
         element = {
             "type": "Feature",
             "properties": {
@@ -174,7 +199,7 @@ def parse_branch_array_geojson(
             },
             "geometry": {
                 "type": "LineString",
-                "coordinates": [node_dict[str(branch.from_node.item())], [node_dict[str(branch.to_node.item())]]]
+                "coordinates": [node_dict[from_node]["geo"], node_dict[to_node]["geo"]]
             }
         }
         parsed_branches.append(element)
@@ -251,6 +276,7 @@ def parse_grid_to_geojson(
     }
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(geojson, f, ensure_ascii=False, indent=4)
+        print("data saved")
     return geojson
 
 

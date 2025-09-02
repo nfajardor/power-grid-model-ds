@@ -44,24 +44,28 @@ class RadialGridGenerator(Generic[T]):
         if a seed is provided, this will be used to set rng.
         """
         grid = self.grid_class.empty(graph_model=self.graph_model)
-
+        print(f"Creating a grid with:\n{self.nr_nodes} nodes and {self.nr_sources} sources")
         # create nodeArray
         node_generator = NodeGenerator(grid=grid, seed=seed)
 
         nodes, _loads_low, loads_high = node_generator.run(amount=self.nr_nodes)
         grid.append(nodes)
         grid.append(loads_high)
-
+        print(f"Added {len(nodes)} nodes and {len(loads_high)} loads")
         # create sourceArray
         source_generator = SourceGenerator(grid=grid, seed=seed)
         nodes, sources = source_generator.run(amount=self.nr_sources)
         grid.append(nodes)
         grid.append(sources)
+        print(f"Added another {len(nodes)} nodes and {len(sources)} sources")
 
         # create lineArray
         line_generator = LineGenerator(grid=grid, seed=seed)
         lines = line_generator.run(amount=self.nr_nops)
         grid.append(lines)
+        print(f"Added {len(lines)} lines")
+
+        print(f"right now, the grid has: {len(grid.node)} nodes and {len(grid.source)} sources and {len(lines)} lines")
 
         if create_10_3_kv_net:
             # create 3kV nodes

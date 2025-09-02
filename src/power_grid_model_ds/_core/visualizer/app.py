@@ -22,6 +22,9 @@ from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_n
 from power_grid_model_ds.arrays import NodeArray
 
 from power_grid_model_ds._core.visualizer.map_container import create_map_container
+from power_grid_model_ds._core.visualizer.parsers import SLIDER_STEP
+
+import time
 
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
 BOOTSTRAP_STUFF = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
@@ -71,16 +74,21 @@ def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: i
     app = Dash(
         external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, BOOTSTRAP_STUFF, FONT_AWESOME, GOOGLE_FONTS]
     )
-
+    s = time.perf_counter()
     app.layout = get_slider_app_layout(grid, name, file_name)
+    e = time.perf_counter()
+    print(f"Layout creation time: {(e-s) * 1000}ms")
     app.run(debug=debug, port=port)
 
 
 def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Container:
+    t1 = time.perf_counter()
     menu = get_menu_layout()
+    t2 = time.perf_counter()
     map_container = get_map_layout(grid, name, file_name)
-    print("_______")
-    print(map_container)
+    t3 = time.perf_counter()
+    print(f"Menu creation time: {(t2 - t1) * 1000}ms")
+    print(f"Map creation time: {(t3-t2) * 1000}ms")
     return dbc.Container([
         menu,
         map_container
@@ -88,8 +96,13 @@ def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Containe
 
 
 def get_map_layout(grid: Grid, name: str, file_name: str) -> dbc.Row:
+    t1 = time.perf_counter()
     geojson = parse_grid_to_geojson(grid, name, file_name)
+    t2 = time.perf_counter()
     map_container = create_map_container(geojson)
+    t3 = time.perf_counter()
+    print(f"GeoJSON mapping: {(t2 - t1) * 1000}ms")
+    print(f"map container creation time: {(t3 - t2) * 1000}ms")
     return map_container
 
 
@@ -98,7 +111,7 @@ def get_menu_layout() -> dbc.Row:
         id='main-slider',
         min=0,
         max=1,
-        step=0.02,
+        step=SLIDER_STEP,
         value=0,
         marks={0: 'Map View', 0.5: "FDG View", 1: "SLD View"},
         updatemode="drag"
