@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """Generator for NodeArray"""
+import random
 
 import numpy as np
 
 from power_grid_model_ds._core.data_source.generator.arrays.base import BaseGenerator
+from power_grid_model_ds._core.model.enums.nodes import NodeType
 
 
 class NodeGenerator(BaseGenerator):
@@ -23,14 +25,15 @@ class NodeGenerator(BaseGenerator):
         load_low_array.id = 1 + node_array.id.max() + np.arange(amount)
         load_low_array.node = node_array.id
         load_low_array.status = 1
+
         load_high_array = self.grid.sym_load.__class__.zeros(amount)
         load_high_array.id = 1 + load_low_array.id.max() + np.arange(amount)
         load_high_array.node = node_array.id
         load_high_array.status = 1
 
         # power consumption in Watt
-        load_low_array.p_specified = np.round(self.rng.normal(200_000, 150_000, amount))
-        load_low_array.q_specified = np.round(self.rng.normal(20_000, 15_000, amount))
+        load_low_array.p_specified = np.round(self.rng.normal(200_000, 150_000, amount)).p_specified = np.round(self.rng.normal(200_000, 150_000, amount))
+        load_low_array.q_specified = np.round(self.rng.normal(20_000, 15_000, amount)).q_specified = np.round(self.rng.normal(20_000, 15_000, amount))
         load_high_array.p_specified = np.round(self.rng.normal(-100_000, 350_000, amount))
         load_high_array.q_specified = np.round(self.rng.normal(-5_000, 35_000, amount))
 

@@ -19,9 +19,13 @@ class Node(Id):
     node_type: NDArray[np.int8]
     feeder_branch_id: NDArray[np.int32]  # branch id of the feeder
     feeder_node_id: NDArray[np.int32]  # node id of the first substation node
+    latitude: NDArray[np.float64]
+    longitude: NDArray[np.float64]
 
     _defaults = {
         "node_type": NodeType.UNSPECIFIED.value,
         "feeder_branch_id": empty,
         "feeder_node_id": empty,
+        "latitude": empty,
+        "longitude": empty,
     }

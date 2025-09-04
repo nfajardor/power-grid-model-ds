@@ -215,7 +215,6 @@ class FancyArray(ABC):
         """
         array_dtype = cls.get_dtype()
         array = np.zeros(num, dtype=array_dtype)
-
         defaults = cls.get_defaults()
         for column in array_dtype.names:
             if use_defaults and column in defaults and defaults[column] is not empty:
