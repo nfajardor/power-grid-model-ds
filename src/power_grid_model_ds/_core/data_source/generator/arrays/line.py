@@ -48,6 +48,128 @@ class LineGenerator(BaseGenerator):
 
         return self.line_array
 
+    def get_next_nodes(self, line, current_node):
+        if current_node == line['properties']['start_node_id']:
+            return line['properties']['end_node_id'], line['geometry']['coordinates']
+        return line['properties']['start_node_id'], line['geometry']['coordinates'][::-1]
+
+
+    def create_from_list(self, line_list, substations, id_mapping={}):
+        line_array = self.grid.line.__class__()
+        status = {}
+        lines = {}
+        next_nodes = []
+        cur_line_id = self.grid.max_id + 1
+        # print(f"Starting id = {cur_line_id} - {type(cur_line_id)}")
+        paths = {}
+        # print("Adding the substations")
+
+        for s in substations:
+            s_id = s['properties']['id']
+            # print(f"Adding substation {s}")
+            status[s_id] = True
+            current_lines = [l for l in line_list if (l['properties']['start_node_id'] == s_id or l['properties']['end_node_id'] == s_id)]
+            # print(f"Substation {s_id} has {len(current_lines)} lines")
+            for l in current_lines:
+                # print(f"Adding line:\n{l}\n____________")
+                next_node, path = self.get_next_nodes(l, s_id)
+                if next_node not in status:
+                    # print(f"Line {l['properties']['id']} connects to a new node")
+                    new_line = self.create_single_line(
+                        from_node=id_mapping[s_id],
+                        to_node=id_mapping[next_node],
+                        feeder_node=id_mapping[s_id],
+                        is_feeder=True,
+                        line_id=cur_line_id,
+                        feeder_branch=cur_line_id,
+                        is_open=False,
+                        # geometry=path
+                        )
+                    line_array = fp.concatenate(line_array, new_line)
+                    status[next_node] = True
+                    lines[(s_id, next_node)] = True
+                    lines[(next_node, s_id)] = True
+                    paths[cur_line_id] = path
+                    next_nodes.append({"next": next_node, "feeder_node": id_mapping[s_id], "feeder_branch": cur_line_id})
+                    cur_line_id += 1
+                elif (s_id, next_node) not in lines:
+                    # print(f"Line {l['properties']['id']} connects to an old node")
+                    new_line = self.create_single_line(
+                        from_node=id_mapping[s_id],
+                        to_node=id_mapping[next_node],
+                        feeder_node=id_mapping[s_id],
+                        is_feeder=True,
+                        line_id=cur_line_id,
+                        feeder_branch=cur_line_id,
+                        is_open=True,
+                        # geometry=path
+                    )
+                    line_array = fp.concatenate(line_array, new_line)
+                    lines[s, next_node] = True
+                    lines[next_node, s] = True
+                    paths[cur_line_id] = path
+                    cur_line_id += 1
+                # else:
+                #     print(f"Line {l['properties']['id']} is an already existing path")
+        # print("Starting with the edges")
+        counter = 0
+        while len(next_nodes) > 0:
+            # if counter % (5 * int(len(line_list)/100)) == 0:
+            #     print(f"{counter} - {int(100 * float(counter)/len(line_list))}% done")
+            # counter += 1
+            # print(f"evaluating the list now: {len(next_nodes)}")
+            current_node = next_nodes.pop(0)
+            # print(f"Current node: {current_node}")
+            cur_id = current_node['next']
+            cur_feeder_node = current_node['feeder_node']
+            cur_feeder_line = current_node['feeder_branch']
+            adjacent_lines = [l for l in line_list
+                              if (l['properties']['start_node_id'] == cur_id or
+                                  l['properties']['end_node_id'] == cur_id)]
+            # print(f"{cur_id} has {len(adjacent_lines)} adjacent lines")
+            for l in adjacent_lines:
+                # print(f"Adding line:\n{l}\n____________")
+                next_node, path = self.get_next_nodes(l, cur_id)
+                if next_node not in status:
+                    # print(f"Line {l['properties']['id']} connects to a new node")
+                    new_line = self.create_single_line(
+                        from_node=id_mapping[cur_id],
+                        to_node=id_mapping[next_node],
+                        feeder_node = cur_feeder_node,
+                        is_feeder=False,
+                        line_id=cur_line_id,
+                        feeder_branch=cur_feeder_line,
+                        is_open=False,
+                        # geometry=path
+                    )
+                    line_array = fp.concatenate(line_array, new_line)
+                    status[next_node] = True
+                    lines[(cur_id, next_node)] = True
+                    lines[(next_node, cur_id)] = True
+                    paths[cur_line_id] = path
+                    next_nodes.append({"next": next_node, "feeder_node": cur_feeder_node, "feeder_branch": cur_feeder_line})
+                    cur_line_id += 1
+                elif (cur_id, next_node) not in lines:
+                    # print(f"Line {l['properties']['id']} connects to an old node")
+                    new_line = self.create_single_line(
+                        from_node=id_mapping[cur_id],
+                        to_node=id_mapping[next_node],
+                        feeder_node = cur_feeder_node,
+                        is_feeder=False,
+                        line_id=cur_line_id,
+                        feeder_branch=cur_feeder_line,
+                        is_open=True,
+                        # geometry=path
+                    )
+                    line_array = fp.concatenate(line_array, new_line)
+                    lines[cur_id, next_node] = True
+                    lines[next_node, cur_id] = True
+                    paths[cur_line_id] = path
+                    cur_line_id += 1
+                # else:
+                #     print(f"Line {l['properties']['id']} connects to an already existing path")
+        return line_array, paths, id_mapping
+
     def create_routes(self, number_of_routes: int):
         """Create a number of lines from the substation to unconnected nodes"""
         # each source should have at least one route
@@ -95,6 +217,63 @@ class LineGenerator(BaseGenerator):
         new_line.i_n = capacity
         self.line_array = fp.concatenate(self.line_array, new_line)
 
+    def connect_geo_nodes(self, clusters) -> LineArray:
+        lines = self.grid.line.__class__()
+        cluster_origins = [c for c in clusters if c['level'] == 0]
+        next_id = 1 + self.grid.max_id
+        for c in cluster_origins:
+            feeder_line = self.create_single_line(from_node=c['feeder_id'], to_node=c['id'], feeder_node=c['feeder_id'],is_feeder=True,line_id=next_id)
+            c['feeder_branch'] = next_id
+            lines = fp.concatenate(lines, feeder_line)
+            next_id += 1
+
+        next_nodes = []
+        for c in cluster_origins:
+            next_nodes.extend(c['children'])
+            for cc in c['children']:
+                clusters[cc]['feeder_branch'] = c['feeder_branch']
+            while len(next_nodes) >0:
+                current = next_nodes.pop(0)
+                cur_cluster = clusters[current]
+                for cc in cur_cluster['children']:
+                    clusters[cc]['feeder_branch'] = cur_cluster['feeder_branch']
+                next_nodes.extend(cur_cluster['children'])
+                new_line = self.create_single_line(from_node=cur_cluster['parent'], to_node=cur_cluster['id'], feeder_node=cur_cluster['feeder_id'], is_feeder=False,line_id=next_id, feeder_branch=cur_cluster['feeder_branch'])
+                lines = fp.concatenate(lines, new_line)
+                next_id += 1
+        self.line_array = lines
+
+        
+        self.set_unconnected_nodes()
+        while any(self.unconnected_nodes):
+            self.connect_nodes()
+            self.set_unconnected_nodes()
+
+        number_of_nops = 5
+        if number_of_nops > 0:
+            self.create_nop_lines(number_of_nops)
+        return self.line_array, lines
+
+    def create_single_line(self, from_node, to_node, feeder_node, is_feeder, line_id, feeder_branch=None, is_open=False, geometry=[]):
+        line = self.grid.line.__class__.zeros(1)
+        capacity = 100 + self.rng.exponential(200, 1)
+
+        line.from_status = [1]
+        line.to_status = [1]
+        if is_open:
+            line.to_status = [0]
+        line.r1 = self.rng.exponential(0.2, 1)
+        line.x1 = self.rng.exponential(0.02, 1)
+        line.i_n = capacity
+        line.from_node = from_node
+        line.to_node = to_node
+        line.id = line_id
+        line.feeder_node_id = feeder_node
+        line.is_feeder = is_feeder
+        # line.geometry = geometry
+        if feeder_branch is not None:
+            line.feeder_branch_id = feeder_branch
+        return line
     def create_nop_lines(self, number_of_nops: int):
         """Create the inactive lines between different routes (Normally Open Points)"""
         nops = [self.rng.choice(self.grid.node.id, 2, replace=False) for _ in range(number_of_nops)]

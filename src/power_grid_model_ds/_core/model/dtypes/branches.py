@@ -21,11 +21,13 @@ class Branch(Id):
     feeder_branch_id: NDArray[np.int32]  # branch id of the feeding branch
     feeder_node_id: NDArray[np.int32]  # node id of the feeding node
     is_feeder: NDArray[np.bool_]  # whether or not this branch is from the substation
+    # geometry: NDArray[np.object_]
 
     _defaults = {
         "feeder_branch_id": empty,
         "feeder_node_id": empty,
         "is_feeder": False,
+        # "geometry": empty
     }
 
 

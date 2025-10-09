@@ -12,7 +12,7 @@ import os
 import json
 import random
 
-SLIDER_STEP = 0.05
+SLIDER_STEP = 0.01
 
 def parse_node_array(nodes: NodeArray) -> list[dict[str, Any]]:
     """Parse the nodes."""
@@ -156,7 +156,8 @@ def parse_nodes_geojson(nodes: NodeArray) \
 def parse_branch_array_geojson(
         branches: BranchArray,
         group: Literal["line", "link", "transformer"],
-        node_dict: dict[str, list[float]]) \
+        node_dict: dict[str, list[float]],
+        paths) \
         -> list[dict[str, Any]]:
     """Parses a branch array of a single type as a list of geojson features
 
@@ -179,7 +180,14 @@ def parse_branch_array_geojson(
     """
     parsed_branches = []
     columns = branches.columns
+    # print(f"PATHS\n_______")
+    # for p in paths:
+    #     print(f"path {p}")
+    #     for d in paths[p]:
+    #         print(paths[p][d])
     for branch in branches:
+        # print(f"current branch id: {branch.id}")
+        # print(f"current branch geo path: {paths['geo'][branch.id.item()]}")
         data = _array_to_dict(branch, columns)
         data["group"] = group
         from_node = str(branch.from_node.item())
@@ -190,6 +198,10 @@ def parse_branch_array_geojson(
         data["to_fdg"] = node_dict[to_node]["fdg"]
         data["from_sld"] = node_dict[from_node]["sld"]
         data["to_sld"] = node_dict[to_node]["sld"]
+        data['geo_path'] = paths['geo'][branch.id.item()]
+        data['fdg_path'] = paths['fdg'][branch.id.item()]
+        data['sld_path'] = paths['sld'][branch.id.item()]
+
 
         element = {
             "type": "Feature",
@@ -199,7 +211,7 @@ def parse_branch_array_geojson(
             },
             "geometry": {
                 "type": "LineString",
-                "coordinates": [node_dict[from_node]["geo"], node_dict[to_node]["geo"]]
+                "coordinates": paths['geo'][branch.id.item()]
             }
         }
         parsed_branches.append(element)
@@ -208,7 +220,8 @@ def parse_branch_array_geojson(
 
 def parse_branches_geojson(
         grid: Grid,
-        node_dict: dict[str, list[float]]) \
+        node_dict: dict[str, list[float]],
+        paths) \
         -> list[dict[str, Any]]:
     """Parse the branches into a list of feature element for the geojson
 
@@ -227,10 +240,104 @@ def parse_branches_geojson(
 
     """
     parsed_branches = []
-    parsed_branches.extend(parse_branch_array_geojson(grid.line, "line", node_dict))
-    parsed_branches.extend(parse_branch_array_geojson(grid.link, "link", node_dict))
-    parsed_branches.extend(parse_branch_array_geojson(grid.transformer, "transformer", node_dict))
+    parsed_branches.extend(parse_branch_array_geojson(grid.line, "line", node_dict, paths))
+    parsed_branches.extend(parse_branch_array_geojson(grid.link, "link", node_dict, paths))
+    parsed_branches.extend(parse_branch_array_geojson(grid.transformer, "transformer", node_dict, paths))
     return parsed_branches
+
+def parse_nodes_geojson_new(nodes: NodeArray) \
+        -> tuple[list[dict[str, Any]], dict[str, list[float]], dict[str, float]]:
+    """Parses the nodes in the grid into a list of feature element for the geojson and a dictionary
+
+        Parameters
+        ----------
+        nodes: NodeArray
+            The nodes in the grid
+
+        Returns
+        ---------
+        parsed_nodes: list[dict[str, Any]]
+            The parsed nodes in the grid
+
+        node_dict: dict[str, list[float]]
+            Dictionary with the nodes in the grid
+    """
+
+    parsed_nodes = []
+    node_dict = {}
+
+    # Mean and std of latitude and longitude to set the current coordinates as random
+    center = [4.36716, 52.00738]
+    extreme = [4.39349, 51.98508]
+    std_lon = (extreme[0] - center[0]) / 3
+    std_lat = (extreme[1] - center[1]) / 3
+    centroid_lon = 0.0
+    centroid_lat = 0.0
+
+
+    for node in nodes:
+        data = _array_to_dict(node, nodes.columns)
+        node_name = str(node.id.item())
+        node_dict[node_name] = {}
+        node_dict[node_name]["geo"] = \
+            [
+                float(node.longitude),
+                float(node.latitude)
+            ]
+        node_dict[node_name]["fdg"] = \
+            [
+                float(node.fdg_lon),
+                float(node.fdg_lat)
+            ]
+        node_dict[node_name]["sld"] = \
+            [
+                float(node.sld_lon),
+                float(node.sld_lat)
+            ]
+        centroid_lon += node.longitude
+        centroid_lat += node.latitude
+        element = {
+            "type": "Feature",
+            "properties": {
+                "Name": node_name,
+                "data": data,
+                "coords": {
+                    "geo": node_dict[node_name]["geo"],
+                    "fdg": node_dict[node_name]["fdg"],
+                    "sld": node_dict[node_name]["sld"]
+                }
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": node_dict[node_name]["geo"]
+            }
+        }
+        parsed_nodes.append(element)
+    centroid_lat /= len(nodes)
+    centroid_lon /= len(nodes)
+    print(f"centroid is {centroid_lon}, {centroid_lat}")
+    return parsed_nodes, node_dict, {'lon': centroid_lon[0], 'lat': centroid_lat[0]}
+
+
+def parse_grid_to_geojson_new(
+        grid: Grid,
+        name: str,
+        file_name: str,
+        paths) \
+        -> tuple[dict[str, any], dict[str, float]]:
+    features = []
+    parsed_nodes, node_dict, centroid = parse_nodes_geojson_new(grid.node)
+    parsed_branches = parse_branches_geojson(grid, node_dict, paths)
+    features.extend(parsed_nodes)
+    features.extend(parsed_branches)
+    geojson = {
+
+        "type": "FeatureCollection",
+        "name": f"{name}",
+        "features": features
+    }
+
+    return geojson, centroid
 
 
 def parse_grid_to_geojson(

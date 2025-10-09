@@ -21,6 +21,11 @@ class Node(Id):
     feeder_node_id: NDArray[np.int32]  # node id of the first substation node
     latitude: NDArray[np.float64]
     longitude: NDArray[np.float64]
+    fdg_lat: NDArray[np.float64]
+    fdg_lon: NDArray[np.float64]
+    sld_lat: NDArray[np.float64]
+    sld_lon: NDArray[np.float64]
+    parent_id: NDArray[np.int32]    # node id of the node one step closer to the first substation
 
     _defaults = {
         "node_type": NodeType.UNSPECIFIED.value,
@@ -28,4 +33,9 @@ class Node(Id):
         "feeder_node_id": empty,
         "latitude": empty,
         "longitude": empty,
+        "fdg_lat": empty,
+        "fdg_lon": empty,
+        "sld_lat": empty,
+        "sld_lon": empty,
+        "parent_id": empty,
     }

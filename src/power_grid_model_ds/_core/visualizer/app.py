@@ -18,7 +18,8 @@ from power_grid_model_ds._core.visualizer.layout.cytoscape_html import get_cytos
 from power_grid_model_ds._core.visualizer.layout.cytoscape_styling import DEFAULT_STYLESHEET
 from power_grid_model_ds._core.visualizer.layout.header import HEADER_HTML
 from power_grid_model_ds._core.visualizer.layout.selection_output import SELECTION_OUTPUT_HTML
-from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array, parse_grid_to_geojson
+from power_grid_model_ds._core.visualizer.parsers import parse_branches, parse_node_array, parse_grid_to_geojson, \
+    parse_grid_to_geojson_new
 from power_grid_model_ds.arrays import NodeArray
 
 from power_grid_model_ds._core.visualizer.map_container import create_map_container
@@ -59,7 +60,7 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     app.run(debug=debug, port=port)
 
 
-def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: int = 8050, name: str = "Grid Data") -> None:
+def slider_visualization(grid: Grid, file_name: str, paths, debug: bool = True, port: int = 8050, name: str = "Grid Data") -> None:
     """Visualize the Grid using the three mdoes: map, fdg and sld.
 
         grid: Grid
@@ -75,17 +76,17 @@ def slider_visualization(grid: Grid, file_name: str, debug: bool = True, port: i
         external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, BOOTSTRAP_STUFF, FONT_AWESOME, GOOGLE_FONTS]
     )
     s = time.perf_counter()
-    app.layout = get_slider_app_layout(grid, name, file_name)
+    app.layout = get_slider_app_layout(grid, name, file_name, paths)
     e = time.perf_counter()
     print(f"Layout creation time: {(e-s) * 1000}ms")
-    app.run(debug=debug, port=port)
+    app.run(debug=debug, port=port, dev_tools_ui=False, dev_tools_props_check=False)
 
 
-def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Container:
+def get_slider_app_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.Container:
     t1 = time.perf_counter()
     menu = get_menu_layout()
     t2 = time.perf_counter()
-    map_container = get_map_layout(grid, name, file_name)
+    map_container = get_map_layout(grid, name, file_name, paths)
     t3 = time.perf_counter()
     print(f"Menu creation time: {(t2 - t1) * 1000}ms")
     print(f"Map creation time: {(t3-t2) * 1000}ms")
@@ -95,11 +96,11 @@ def get_slider_app_layout(grid: Grid, name: str, file_name: str) -> dbc.Containe
     ])
 
 
-def get_map_layout(grid: Grid, name: str, file_name: str) -> dbc.Row:
+def get_map_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.Row:
     t1 = time.perf_counter()
-    geojson = parse_grid_to_geojson(grid, name, file_name)
+    geojson, centroid = parse_grid_to_geojson_new(grid, name, file_name, paths)
     t2 = time.perf_counter()
-    map_container = create_map_container(geojson)
+    map_container = create_map_container(geojson, centroid)
     t3 = time.perf_counter()
     print(f"GeoJSON mapping: {(t2 - t1) * 1000}ms")
     print(f"map container creation time: {(t3 - t2) * 1000}ms")
