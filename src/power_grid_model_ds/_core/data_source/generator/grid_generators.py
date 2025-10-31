@@ -318,7 +318,13 @@ class RadialGridGenerator(Generic[T]):
         self.log_dict(paths['geo'], "PATHS")
         self.log_dict(id_mapping, "IDS")
 
-        self.send_grid_to_geosjon(grid, paths,file_path)
+        # self.send_grid_to_geosjon(grid, paths,file_path)
+        return grid, paths
+
+    def load_from_geojson(self, path: str):
+        print(path)
+        grid = self.grid_class.empty(graph_model=self.graph_model)
+        paths = {}
         return grid, paths
 
     def create_radial_geographic(

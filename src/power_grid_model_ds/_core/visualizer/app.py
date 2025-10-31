@@ -12,7 +12,8 @@ from power_grid_model_ds._core.visualizer.callbacks import (  # noqa: F401  # py
     element_selection,
     header,
     search_form,
-    slider_output
+    slider_output,
+    property_dropdowns
 )
 from power_grid_model_ds._core.visualizer.layout.cytoscape_html import get_cytoscape_html
 from power_grid_model_ds._core.visualizer.layout.cytoscape_styling import DEFAULT_STYLESHEET
@@ -26,6 +27,8 @@ from power_grid_model_ds._core.visualizer.map_container import create_map_contai
 from power_grid_model_ds._core.visualizer.parsers import SLIDER_STEP
 
 import time
+import json
+import numpy as np
 
 GOOGLE_FONTS = "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
 BOOTSTRAP_STUFF = "https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.2.0/mdb.min.css"
@@ -98,7 +101,14 @@ def get_slider_app_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.C
 
 def get_map_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.Row:
     t1 = time.perf_counter()
-    geojson, centroid = parse_grid_to_geojson_new(grid, name, file_name, paths)
+    with open(file_name, "r") as f:
+        geojson = json.load(f)
+    print(geojson)
+    x = np.asarray([i['properties']['coordinates']['geo']['lon'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
+    y = np.asarray([i['properties']['coordinates']['geo']['lat'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
+    print(f"X:\n{x}\nY:\n{y}")
+    centroid = {'lon': float(np.mean(x)), 'lat': float(np.mean(y))}
+    # geojson, centroid = parse_grid_to_geojson_new(grid, name, file_name, paths)
     t2 = time.perf_counter()
     map_container = create_map_container(geojson, centroid)
     t3 = time.perf_counter()
@@ -121,9 +131,25 @@ def get_menu_layout() -> dbc.Row:
         id="slider-output-text",
         children=["Hello World!"],
     )
+    node_dropdown = dcc.Dropdown(options=[
+        {'label': 'Active Power', 'value': property_dropdowns.NodeDropdownOptions.ACTIVE_POWER},
+        {'label': 'Reactive Power', 'value': property_dropdowns.NodeDropdownOptions.REACTIVE_POWER}
+        ], value=property_dropdowns.NodeDropdownOptions.ACTIVE_POWER, id='node_dropdown')
+
+    edge_dropdown = dcc.Dropdown(options=[
+        {'label': 'Resistance', 'value': property_dropdowns.EdgeDropdownOptions.RESISTANCE},
+        {'label': 'Reactance', 'value': property_dropdowns.EdgeDropdownOptions.REACTANCE},
+        {'label': 'Capacitance', 'value': property_dropdowns.EdgeDropdownOptions.CAPACITANCE},
+        {'label': 'Loss Factor', 'value': property_dropdowns.EdgeDropdownOptions.LOSS_FACTOR},
+        {'label': 'Current', 'value': property_dropdowns.EdgeDropdownOptions.CURRENT},
+    ],
+    value= property_dropdowns.EdgeDropdownOptions.RESISTANCE,
+    id='edge_dropdown')
+    # edge_dropdown = dcc.Dropdown(['Resistance', 'Reactance', 'Capacitance', 'Loss Factor', 'Current'], 'Current', id='edge_dropdown')
     return dbc.Row([
-        dbc.Col([slider], width=6),
-        dbc.Col([text_output], width=6)
+        dbc.Col([slider], width=4),
+        dbc.Col([node_dropdown, edge_dropdown], width=4),
+        dbc.Col([text_output], width=4)
     ])
 
 

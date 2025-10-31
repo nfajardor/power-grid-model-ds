@@ -326,6 +326,7 @@ def parse_grid_to_geojson_new(
         paths) \
         -> tuple[dict[str, any], dict[str, float]]:
     features = []
+
     parsed_nodes, node_dict, centroid = parse_nodes_geojson_new(grid.node)
     parsed_branches = parse_branches_geojson(grid, node_dict, paths)
     features.extend(parsed_nodes)
@@ -336,6 +337,7 @@ def parse_grid_to_geojson_new(
         "name": f"{name}",
         "features": features
     }
+    print(geojson)
 
     return geojson, centroid
 
