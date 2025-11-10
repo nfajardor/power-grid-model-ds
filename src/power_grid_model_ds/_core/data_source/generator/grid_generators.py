@@ -325,6 +325,21 @@ class RadialGridGenerator(Generic[T]):
         print(path)
         grid = self.grid_class.empty(graph_model=self.graph_model)
         paths = {}
+        with open(path, "r") as f:
+            geojson = json.load(f)
+        nodes = [n for n in geojson['features'] if n['geometry']['type'] == 'Point']
+
+        buses = [n for n in nodes if n['properties']['type_props']['type'] == 'BUS']
+        substations = [n for n in nodes if n['properties']['type_props']['type'] == 'SUBSTATION']
+        lines = [n for n in geojson['features'] if n['geometry']['type'] == 'LineString']
+        source_generator = SourceGenerator(grid=grid, seed=None)
+        print("Creating substations")
+        substation_nodes, sources, id_mapping = source_generator.create_from_geojson(substations)
+        for s in substation_nodes:
+            print(s)
+        for s in sources:
+            print(s)
+
         return grid, paths
 
     def create_radial_geographic(

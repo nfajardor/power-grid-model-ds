@@ -63,7 +63,7 @@ def visualize(grid: Grid, debug: bool = False, port: int = 8050) -> None:
     app.run(debug=debug, port=port)
 
 
-def slider_visualization(grid: Grid, file_name: str, paths, debug: bool = True, port: int = 8050, name: str = "Grid Data") -> None:
+def slider_visualization_from_file(grid, file_name: str, paths, debug: bool = True, port: int = 8050, name: str = "Grid Data") -> None:
     """Visualize the Grid using the three mdoes: map, fdg and sld.
 
         grid: Grid
@@ -84,8 +84,7 @@ def slider_visualization(grid: Grid, file_name: str, paths, debug: bool = True, 
     print(f"Layout creation time: {(e-s) * 1000}ms")
     app.run(debug=debug, port=port, dev_tools_ui=False, dev_tools_props_check=False)
 
-
-def get_slider_app_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.Container:
+def get_slider_app_layout(grid, name: str, file_name: str, paths) -> dbc.Container:
     t1 = time.perf_counter()
     menu = get_menu_layout()
     t2 = time.perf_counter()
@@ -99,16 +98,16 @@ def get_slider_app_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.C
     ])
 
 
-def get_map_layout(grid: Grid, name: str, file_name: str, paths) -> dbc.Row:
+def get_map_layout(grid, name: str, file_name: str, paths) -> dbc.Row:
     t1 = time.perf_counter()
-    with open(file_name, "r") as f:
-        geojson = json.load(f)
-    print(geojson)
-    x = np.asarray([i['properties']['coordinates']['geo']['lon'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
-    y = np.asarray([i['properties']['coordinates']['geo']['lat'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
-    print(f"X:\n{x}\nY:\n{y}")
-    centroid = {'lon': float(np.mean(x)), 'lat': float(np.mean(y))}
-    # geojson, centroid = parse_grid_to_geojson_new(grid, name, file_name, paths)
+    # with open(file_name, "r") as f:
+    #     geojson = json.load(f)
+    # print(geojson)
+    # x = np.asarray([i['properties']['coordinates']['geo']['lon'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
+    # y = np.asarray([i['properties']['coordinates']['geo']['lat'] for i in geojson['features'] if i['geometry']['type'] == 'Point'])
+    # print(f"X:\n{x}\nY:\n{y}")
+    # centroid = {'lon': float(np.mean(x)), 'lat': float(np.mean(y))}
+    geojson, centroid = parse_grid_to_geojson_new(grid, name, file_name, paths)
     t2 = time.perf_counter()
     map_container = create_map_container(geojson, centroid)
     t3 = time.perf_counter()
@@ -139,8 +138,6 @@ def get_menu_layout() -> dbc.Row:
     edge_dropdown = dcc.Dropdown(options=[
         {'label': 'Resistance', 'value': property_dropdowns.EdgeDropdownOptions.RESISTANCE},
         {'label': 'Reactance', 'value': property_dropdowns.EdgeDropdownOptions.REACTANCE},
-        {'label': 'Capacitance', 'value': property_dropdowns.EdgeDropdownOptions.CAPACITANCE},
-        {'label': 'Loss Factor', 'value': property_dropdowns.EdgeDropdownOptions.LOSS_FACTOR},
         {'label': 'Current', 'value': property_dropdowns.EdgeDropdownOptions.CURRENT},
     ],
     value= property_dropdowns.EdgeDropdownOptions.RESISTANCE,

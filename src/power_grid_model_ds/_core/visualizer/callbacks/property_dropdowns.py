@@ -10,9 +10,7 @@ class NodeDropdownOptions(IntEnum):
 class EdgeDropdownOptions(IntEnum):
     RESISTANCE  = 0
     REACTANCE   = 1
-    CAPACITANCE = 2
-    LOSS_FACTOR = 3
-    CURRENT     = 4
+    CURRENT     = 2
 
 
 @callback(
